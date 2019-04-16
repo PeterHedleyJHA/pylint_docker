@@ -1,11 +1,8 @@
 from __future__ import absolute_import
-
-from flask import Flask, request, Blueprint, current_app
 import os
 import re
-from travispy import TravisPy
 import logging
-
+from flask import Flask, request, Blueprint, current_app
 
 LOG_LEVEL = logging.INFO
 OUTPUT_FOLDER = '/tmp/pylint-server'
@@ -28,121 +25,94 @@ BADGE_TEMPLATE = """
                  font-size="11">
     <text x="25" y="15" fill="#010101" fill-opacity=".3">{1}</text>
     <text x="25" y="14">{1}</text>
-    <text x="67" y="15" fill="#010101" fill-opacity=".3">{0:.2f}</text>
-    <text x="67" y="14">{0:.2f}</text>
+    <text x="67" y="15" fill="#010101" fill-opacity=".3">{0}</text>
+    <text x="67" y="14">{0}</text>
   </g>
 </svg>
-"""    
+"""
 
 mainbp = Blueprint('main', __name__)
 
 
 @mainbp.route('/pylint-reports', methods=['POST'])
 def handle_report_post():
-    current_app.logger.info('handling POST on /reports')
+    report, output_folder = parse_args('pylint-report')
+    save_report('pylint_report.html', output_folder, report)
 
-    git_slug=None
-    print(request)
-    if 'git-slug' in request.form:
-        git_slug = str(request.form['git-slug']).split("/")[-1]
-    else:
-        raise ValueError('invalid repository slug')
+    rating = get_match("Your code has been rated at (.+?)/10", report)
+    rating_dividers = [-5, 3, 6, 10]
+    colour = get_colour(float(rating), rating_dividers)
 
-    git_branch=None
-    if 'git-branch' in request.form:
-        git_branch = request.form['git-branch']
-    else:
-        raise ValueError('invalid repository branch')
-    
-    report = None
-    if 'pylint-report' in request.files:
-        report = request.files['pylint-report'].read()
-    else:
-        raise ValueError('No Report Specified')
-    
-    output_folder = current_app.config['OUTPUT_FOLDER']
-    output_report = os.path.join(output_folder, git_slug, git_branch, 'report.html')
-    current_app.logger.info('saving report to '+output_report)
-    save_file(output_report, report)
-
-    (rating, colour) = get_pylint_rating_and_colour(report)
-    output_badge = os.path.join(output_folder, git_slug, git_branch, 'rating.svg')
-    current_app.logger.info('saving badge to '+output_badge)
-    save_file(output_badge, BADGE_TEMPLATE.format(rating,'pylint',colour))
-    
+    save_badge(rating, colour, "pylint", output_folder)
     return 'OK\n', 200
-
-
 
 @mainbp.route('/coverage-reports', methods=['POST'])
 def handle_coverage_report_post():
-    current_app.logger.info('handling POST on /reports')
 
-    git_slug=None
-    print(request)
+    report, output_folder = parse_args('coverage-report')
+    save_report('coverage_report.html', output_folder, report)
+
+    rating = get_match(r"\d+(?=%)", report)
+    rating_dividers = [20, 70, 90, 100]
+    colour = get_colour(int(rating), rating_dividers)
+
+    save_badge(rating, colour, "cov", output_folder)
+    return 'OK\n', 200
+
+def parse_args(report_arg):
+    current_app.logger.info('handling POST on /reports')
+    git_slug = get_slug()
+    git_branch = get_branch()
+    report = get_report(report_arg)
+    output_folder = current_app.config['OUTPUT_FOLDER']
+    output_folder = os.path.join(output_folder, git_slug, git_branch)
+    return report, output_folder
+
+def save_badge(rating, colour, badge_name, output_folder):
+    output_badge = os.path.join(output_folder, badge_name + '.svg')
+    current_app.logger.info('saving badge to '+ output_badge)
+    save_file(output_badge, BADGE_TEMPLATE.format(rating, badge_name, colour))
+
+def get_slug():
     if 'git-slug' in request.form:
         git_slug = str(request.form['git-slug']).split("/")[-1]
     else:
         raise ValueError('invalid repository slug')
+    return git_slug
 
-    git_branch=None
+def get_branch():
     if 'git-branch' in request.form:
         git_branch = request.form['git-branch']
     else:
         raise ValueError('invalid repository branch')
-    
-    report = None
-    if 'coverage-report' in request.files:
-        report = request.files['coverage-report'].read()
+    return git_branch
+
+def get_report(report_name):
+    if report_name in request.files:
+        report = request.files[report_name].read()
     else:
         raise ValueError('No Report Specified')
-    
-    output_folder = current_app.config['OUTPUT_FOLDER']
-    output_report = os.path.join(output_folder, git_slug, git_branch, 'coverage_report.html')
+    return report
+
+def save_report(report_name, output_folder, report):
+    output_report = os.path.join(output_folder, report_name)
     current_app.logger.info('saving report to '+output_report)
     save_file(output_report, report)
 
-    (rating, colour) = get_coverage_rating_and_colour(report)
-    output_badge = os.path.join(output_folder, git_slug, git_branch, 'coverage_rating.svg')
-    current_app.logger.info('saving badge to '+ output_badge)
-    save_file(output_badge, BADGE_TEMPLATE.format(rating, "cov", colour))
-    
-    return 'OK\n', 200
+def get_match(pattern, report):
+    match = re.findall(pattern, str(report))[-1]
+    if not match:
+        raise ValueError('could not find match in report')
+    return match
 
-
-def get_coverage_rating_and_colour(report):
-    colour = '9d9d9d'
-    rating = 0
-    match = re.findall("\d+%",str(report))[-1].replace("%","")
-    
-    if match:
-        rating = float(match)
-        if rating >= 90 and rating <= 100:
-            colour = '44cc11'
-        elif rating < 90 and rating >= 70:
-            colour = 'f89406'
-        elif rating >= 20 and rating < 70:
-            colour = 'b94947'
-        else:
-            colour = '9d9d9d'
-    return (rating, colour)
-
-
-def get_pylint_rating_and_colour(report):
-    colour = '9d9d9d'
-    rating = 0
-    match = re.search("Your code has been rated at (.+?)/10", str(report))
-    if match:
-        rating = float(match.group(1))
-        if rating >= 6 and rating <= 10:
-            colour = '44cc11'
-        elif rating < 6 and rating >= 3:
-            colour = 'f89406'
-        elif rating >= -5 and rating < 3:
-            colour = 'b94947'
-        else:
-            colour = '9d9d9d'
-    return (rating, colour)
+def get_colour(rating, divs):
+    if rating < divs[0]:
+        return '9d9d9d'
+    if rating < divs[1]:
+        return 'b94947'
+    if rating < divs[2]:
+        return 'f89406'
+    return '44cc11'
 
 def save_file(filename, contents):
     """Save a file anywhere"""
@@ -150,7 +120,6 @@ def save_file(filename, contents):
     ensure_path(os.path.dirname(filename))
     with open(filename, 'w') as thefile:
         thefile.write(str(contents))
-
 
 def ensure_path(path):
     """Make sure the path exists, creating it if need be"""
@@ -166,8 +135,8 @@ def create_app():
     app.register_blueprint(mainbp)
     return app
 
-app=create_app()
+app = create_app()
 
-if __name__=="__main__":
+if __name__ == "__main__":
     #app = create_app()
-    app.run(host='0.0.0.0',port=8787)
+    app.run(host='0.0.0.0', port=8787)

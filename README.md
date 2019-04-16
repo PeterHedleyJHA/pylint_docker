@@ -54,8 +54,8 @@ after_success:
   - coverage report -m > /tmp/coverage.html
   - cat /tmp/coverage.html
   - coverage html -d coverage_html
-  - curl -v -m 120 -X POST -F pull-req=$TRAVIS_PULL_REQUEST -F git-slug=$TRAVIS_REPO_SLUG -F git-branch=$TRAVIS_BRANCH -F pylint-html-report=@/tmp/pylint_html_report.html -F pylint-report=@/tmp/pylint.txt http://63.33.197.197:80/pylint-reports
-  - curl -v -m 120 -X POST -F pull-req=$TRAVIS_PULL_REQUEST -F git-slug=$TRAVIS_REPO_SLUG -F git-branch=$TRAVIS_BRANCH -F coverage-html-report=@./coverage_html/index.html -F coverage-report=@/tmp/coverage.html http://63.33.197.197:80/coverage-reports
+  - curl -v -m 120 -X POST -F pull-req=$TRAVIS_PULL_REQUEST -F git-slug=$TRAVIS_REPO_SLUG -F git-branch=$TRAVIS_BRANCH -F pylint-html-report=@/tmp/pylint_html_report.html -F pylint-report=@/tmp/pylint.txt http://<IPv4 Public IP>:80/pylint-reports
+  - curl -v -m 120 -X POST -F pull-req=$TRAVIS_PULL_REQUEST -F git-slug=$TRAVIS_REPO_SLUG -F git-branch=$TRAVIS_BRANCH -F coverage-html-report=@./coverage_html/index.html -F coverage-report=@/tmp/coverage.html http://<IPv4 Public IP>:80/coverage-reports
 ```
 
 Place a .coveragerc file in your repo containing...
@@ -112,4 +112,4 @@ with badge under... \
 ```/<repo>/<branch>/cov.svg``` 
 
 Put a badge on your README accordingly - e.g. \
-```![Build Status](http://<instance ip>/<repo>/<branch>/cov.svg)[http://<instance ip>/<repo>/<branch>/cov_rep/coverage_report.html]```
+```![Build Status](http://<instance ip>/<repo>/<branch>/cov.svg)[http://<IPv4 Public IP>/<repo>/<branch>/cov_rep/coverage_report.html]```

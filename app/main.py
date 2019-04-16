@@ -36,27 +36,30 @@ mainbp = Blueprint('main', __name__)
 
 @mainbp.route('/pylint-reports', methods=['POST'])
 def handle_report_post():
-    report, output_folder = parse_args('pylint-report')
-    save_report('pylint_report.html', output_folder, report)
+    if request.form['pull-req']=='false':
+        report, output_folder = parse_args('pylint-report')
+        html_report = get_report('pylint-html-report')
+        save_report('pylint_report.html', output_folder, html_report.decode("utf-8"))
 
-    rating = get_match("Your code has been rated at (.+?)/10", report)
-    rating_dividers = [-5, 3, 6, 10]
-    colour = get_colour(float(rating), rating_dividers)
+        rating = get_match("Your code has been rated at (.+?)/10", report)
+        rating_dividers = [-5, 3, 6, 10]
+        colour = get_colour(float(rating), rating_dividers)
 
-    save_badge(rating, colour, "pylint", output_folder)
+        save_badge(rating, colour, "pylint", output_folder)
     return 'OK\n', 200
 
 @mainbp.route('/coverage-reports', methods=['POST'])
 def handle_coverage_report_post():
+    if request.form['pull-req']=='false':
+        report, output_folder = parse_args('coverage-report')
+        report = report.decode("utf-8").replace("\n","<br>")
+        save_report('coverage_report.html', output_folder, report)
 
-    report, output_folder = parse_args('coverage-report')
-    save_report('coverage_report.html', output_folder, report)
+        rating = get_match(r"\d+(?=%)", report)
+        rating_dividers = [20, 70, 90, 100]
+        colour = get_colour(int(rating), rating_dividers)
 
-    rating = get_match(r"\d+(?=%)", report)
-    rating_dividers = [20, 70, 90, 100]
-    colour = get_colour(int(rating), rating_dividers)
-
-    save_badge(rating, colour, "cov", output_folder)
+        save_badge(rating, colour, "cov", output_folder)
     return 'OK\n', 200
 
 def parse_args(report_arg):

@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import os
 import re
 import logging
+import shutil
 from flask import Flask, request, Blueprint, current_app
 
 LOG_LEVEL = logging.INFO
@@ -53,7 +54,12 @@ def handle_coverage_report_post():
     if request.form['pull-req']=='false':
         report, output_folder = parse_args('coverage-report')
         report = report.decode("utf-8").replace("\n","<br>")
-        save_report('coverage_report.html', output_folder, report)
+
+        html_report = get_report('coverage-html-report')
+        cov_report_folder = os.path.join(output_folder,"cov_rep")
+        if not os.path.isdir(cov_report_folder):
+            shutil.copytree("./coverage_html", cov_report_folder)
+        save_report('coverage_report.html', cov_report_folder, html_report.decode("utf-8"))
 
         rating = get_match(r"\d+(?=%)", report)
         rating_dividers = [20, 70, 90, 100]

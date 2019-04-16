@@ -51,10 +51,11 @@ after_success:
   - pylint --output-format=parseable **/*.py > /tmp/pylint.txt
   - pylint --output-format=json **/*.py | pylint-json2html -f json -o /tmp/pylint_html_report.html
   - cat /tmp/pylint.txt
-  - coverage report -m
   - coverage report -m > /tmp/coverage.html
-  - curl -v -m 120 -X POST -F pull-req=$TRAVIS_PULL_REQUEST -F git-slug=$TRAVIS_REPO_SLUG -F git-branch=$TRAVIS_BRANCH -F pylint-html-report=@/tmp/pylint_html_report.html -F pylint-report=@/tmp/pylint.txt http://<instance IPv4 Public IP>:80/pylint-reports
-  - curl -v -m 120 -X POST -F pull-req=$TRAVIS_PULL_REQUEST -F git-slug=$TRAVIS_REPO_SLUG -F git-branch=$TRAVIS_BRANCH -F coverage-report=@/tmp/coverage.html http://<instance IPv4 Public IP>:80/coverage-reports
+  - cat /tmp/coverage.html
+  - coverage html -d coverage_html
+  - curl -v -m 120 -X POST -F pull-req=$TRAVIS_PULL_REQUEST -F git-slug=$TRAVIS_REPO_SLUG -F git-branch=$TRAVIS_BRANCH -F pylint-html-report=@/tmp/pylint_html_report.html -F pylint-report=@/tmp/pylint.txt http://63.33.197.197:80/pylint-reports
+  - curl -v -m 120 -X POST -F pull-req=$TRAVIS_PULL_REQUEST -F git-slug=$TRAVIS_REPO_SLUG -F git-branch=$TRAVIS_BRANCH -F coverage-html-report=@./coverage_html/index.html -F coverage-report=@/tmp/coverage.html http://63.33.197.197:80/coverage-reports
 ```
 
 Place a .coveragerc file in your repo containing...
@@ -107,8 +108,8 @@ with badge under... \
 ```/<repo>/<branch>/pylint.svg```
 
 #### Coverage Scores are under..
-```/<repo>/<branch>/coverage_report.html``` \
+```/<repo>/<branch>/cov_rep/coverage_report.html``` \
 ```/<repo>/<branch>/cov.svg``` 
 
 Put a badge on your README accordingly - e.g. \
-```![Build Status](http://<instance ip>/<repo>/<branch>/cov.svg)[http://<instance ip>/<repo>/<branch>/coverage_report.html]```
+```![Build Status](http://<instance ip>/<repo>/<branch>/cov.svg)[http://<instance ip>/<repo>/<branch>/cov_rep/coverage_report.html]```

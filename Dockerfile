@@ -11,6 +11,7 @@ RUN pip3 install -r /tmp/requirements.txt
 COPY ./app /app
 #RUN rm /etc/nginx/nginx.conf
 COPY nginx.conf /etc/nginx/conf.d/common.conf
+COPY .htpasswd /etc/nginx/.htpasswd
 
 # set an environmental variable, MESSAGE,
 # which the app will use and display

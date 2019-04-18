@@ -20,7 +20,7 @@ supported at the moment.
 1. Start a blank instance using -> AWS -> Launch Templates -> Pylint_Coverage_Server
 2. `ssh -i ~/.ssh/<ssh_key> ubuntu@ <IPv4 Public IP>`
 3. `sudo apt-get update`
-4. `sudo docker install docker.io`
+4. `sudo apt-get install docker.io`
 5. `git clone https://github.com/PeterHedleyJHA/pylint_docker.git`
 6. `cd pylint_docker`
 7. `sudo docker build . -t my_flask_app`

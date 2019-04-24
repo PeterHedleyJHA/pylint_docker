@@ -3,6 +3,7 @@ import os
 import re
 import logging
 import shutil
+import zipfile
 from flask import Flask, request, Blueprint, current_app
 
 LOG_LEVEL = logging.INFO
@@ -49,23 +50,45 @@ def handle_report_post():
         save_badge(rating, colour, "pylint", output_folder)
     return 'OK\n', 200
 
+
+@mainbp.route('/coverage-zip', methods=['POST'])
+def handle_coverage_zip_post():
+    #zip_file = parse_args('coverage-zip')
+    #save_report("cov.zip", "./", zip_file)
+    file = request.files['coverage-zip']
+    file.save("./coveefdd.zip")
+    
+    #xprint(zip_file)
+
 @mainbp.route('/coverage-reports', methods=['POST'])
 def handle_coverage_report_post():
     if request.form['pull-req']=='false':
         report, output_folder = parse_args('coverage-report')
         report = report.decode("utf-8").replace("\n","<br>")
 
-        html_report = get_report('coverage-html-report')
-        cov_report_folder = os.path.join(output_folder,"cov_rep")
-        if not os.path.isdir(cov_report_folder):
-            shutil.copytree("./coverage_html", cov_report_folder)
-        save_report('coverage_report.html', cov_report_folder, html_report.decode("utf-8"))
-
+        html_report = request.files['coverage-html-report-zip']
+        html_report.save('./cov_report.zip')
+        
+        unzip_folder('./cov_report.zip', output_folder)
+        
         rating = get_match(r"\d+(?=%)", report)
         rating_dividers = [20, 70, 90, 100]
         colour = get_colour(int(rating), rating_dividers)
 
         save_badge(rating, colour, "cov", output_folder)
+    return 'OK\n', 200
+
+@mainbp.route('/readme-reports', methods=['POST'])
+def handle_readme_report_post():
+    if request.form['pull-req']=='false':
+        report, output_folder = parse_args('readme-report')        
+        save_report('readme_score.html', output_folder, report.decode("utf-8"))
+
+        rating = get_match(r"(?<=README Coverage: )\d+(?=%)", report)
+        rating_dividers = [10, 35, 60, 100]
+        colour = get_colour(int(rating), rating_dividers)
+
+        save_badge(rating, colour, "readme", output_folder)
     return 'OK\n', 200
 
 def parse_args(report_arg):
@@ -108,6 +131,11 @@ def save_report(report_name, output_folder, report):
     current_app.logger.info('saving report to '+output_report)
     save_file(output_report, report)
 
+def unzip_folder(path_to, dir_to):
+    zip_ref = zipfile.ZipFile(path_to, 'r')
+    zip_ref.extractall(dir_to)
+    zip_ref.close()
+        
 def get_match(pattern, report):
     match = re.findall(pattern, str(report))[-1]
     if not match:
@@ -116,11 +144,11 @@ def get_match(pattern, report):
 
 def get_colour(rating, divs):
     if rating < divs[0]:
-        return '9d9d9d'
-    if rating < divs[1]:
         return 'b94947'
-    if rating < divs[2]:
+    if rating < divs[1]:
         return 'f89406'
+    if rating < divs[2]:
+        return '76af34'
     return '44cc11'
 
 def save_file(filename, contents):

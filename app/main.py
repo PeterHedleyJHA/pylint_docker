@@ -39,66 +39,58 @@ mainbp = Blueprint('main', __name__)
 @mainbp.route('/pylint-reports', methods=['POST'])
 def handle_report_post():
     if request.form['pull-req']=='false':
-        report, output_folder = parse_args('pylint-report')
+        report, report_folder, badge_folder = parse_args('pylint-report')
         html_report = get_report('pylint-html-report')
-        save_report('pylint_report.html', output_folder, html_report.decode("utf-8"))
+        save_report('pylint_report.html', report_folder, html_report.decode("utf-8"))
 
         rating = get_match("Your code has been rated at (.+?)/10", report)
         rating_dividers = [-5, 3, 6, 10]
         colour = get_colour(float(rating), rating_dividers)
 
-        save_badge(rating, colour, "pylint", output_folder)
+        save_badge(rating, colour, "pylint", badge_folder)
     return 'OK\n', 200
-
-
-@mainbp.route('/coverage-zip', methods=['POST'])
-def handle_coverage_zip_post():
-    #zip_file = parse_args('coverage-zip')
-    #save_report("cov.zip", "./", zip_file)
-    file = request.files['coverage-zip']
-    file.save("./coveefdd.zip")
-    
-    #xprint(zip_file)
 
 @mainbp.route('/coverage-reports', methods=['POST'])
 def handle_coverage_report_post():
     if request.form['pull-req']=='false':
-        report, output_folder = parse_args('coverage-report')
+        report, report_folder, badge_folder = parse_args('coverage-report')
         report = report.decode("utf-8").replace("\n","<br>")
 
         html_report = request.files['coverage-html-report-zip']
         html_report.save('./cov_report.zip')
         
-        unzip_folder('./cov_report.zip', output_folder)
+        unzip_folder('./cov_report.zip', report_folder)
         
         rating = get_match(r"\d+(?=%)", report)
         rating_dividers = [20, 70, 90, 100]
         colour = get_colour(int(rating), rating_dividers)
 
-        save_badge(rating, colour, "cov", output_folder)
+        save_badge(rating, colour, "cov", badge_folder)
     return 'OK\n', 200
 
 @mainbp.route('/readme-reports', methods=['POST'])
 def handle_readme_report_post():
     if request.form['pull-req']=='false':
-        report, output_folder = parse_args('readme-report')        
-        save_report('readme_score.html', output_folder, report.decode("utf-8"))
+        report, report_folder, badge_folder = parse_args('readme-report')        
+        save_report('readme_score.html', report_folder, report.decode("utf-8"))
 
         rating = get_match(r"(?<=README Coverage: )\d+(?=%)", report)
         rating_dividers = [10, 35, 60, 100]
         colour = get_colour(int(rating), rating_dividers)
 
-        save_badge(rating, colour, "readme", output_folder)
+        save_badge(rating, colour, "readme", badge_folder)
     return 'OK\n', 200
 
 def parse_args(report_arg):
     current_app.logger.info('handling POST on /reports')
     git_slug = get_slug()
     git_branch = get_branch()
-    report = get_report(report_arg)
     output_folder = current_app.config['OUTPUT_FOLDER']
-    output_folder = os.path.join(output_folder, git_slug, git_branch)
-    return report, output_folder
+    report_folder = os.path.join(output_folder, "reports", git_slug, git_branch)
+    badge_folder = os.path.join(output_folder, "badges", git_slug, git_branch)
+
+    report = get_report(report_arg)
+    return report, report_folder, badge_folder
 
 def save_badge(rating, colour, badge_name, output_folder):
     output_badge = os.path.join(output_folder, badge_name + '.svg')

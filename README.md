@@ -1,4 +1,4 @@
-pylint-server
+## pylint-server
 
 A small Flask application to keep keep track of pylint, coverage reports and ratings.
 

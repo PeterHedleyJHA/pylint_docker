@@ -27,9 +27,16 @@ supported at the moment.
 8. `sudo docker run -d --restart=always -p 80:80 --name=peter my_flask_app`
 9. **Relax that is it!**
 
+## Other Useful Docker Commands
+
+`sudo docker exec -it peter bash` load the shell of a docker container named `peter`.
+`sudo docker ps` see all running containers.
+`sudo docker kill peter` :( stop docker container called `peter` from running.
+`sudo docker rm peter` (need to do this too in order to re-run a container called `peter`)
+
 ## Usage
 
-In your .travis.yml file for the project you wish to track put the following...
+In your `.travis.yml` file for the project you wish to track put the following...
 
 ```
 language: python
@@ -103,13 +110,28 @@ ignore_errors = True
 directory = coverage_html_report
 ```
 #### Pylint scores are in the file
-```/<repo>/<branch>/pylint_report.html``` \
+```/reports/<repo>/<branch>/pylint_report.html``` \
 with badge under... \
-```/<repo>/<branch>/pylint.svg```
+```/badges/<repo>/<branch>/pylint.svg```
 
 #### Coverage Scores are under..
-```/<repo>/<branch>/cov_rep/coverage_report.html``` \
-```/<repo>/<branch>/cov.svg``` 
+```/reports/<repo>/<branch>/cov_rep/coverage_report.html``` \
+```/badges/<repo>/<branch>/cov.svg``` 
 
 Put a badge on your README accordingly - e.g. \
-```![Build Status](http://<instance ip>/<repo>/<branch>/cov.svg)[http://<IPv4 Public IP>/<repo>/<branch>/cov_rep/coverage_report.html]```
+```![Build Status](http://<instance ip>/badges/<repo>/<branch>/cov.svg)[http://<IPv4 Public IP>/reports/<repo>/<branch>/cov_rep/coverage_report.html]```
+
+
+
+### Summary of Files
+
+`.htpasswd`
+Password for uploading and reading images from the container. 
+See [**link**](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-http-basic-authentication/) for more details on creating password files (DO NOT OVERWRITE ANYTHING ON ONE OF OUR EXISTING AWS SERVERS!!!!!)
+
+`nginx.conf`
+Used to create the security permissions for the docker image. These define areas that are secured and points to the uwsgi.sock for the flask app.
+
+`Dockerfile`
+Build file for the server uses the [**uwsgi_flask_nginx**](https://hub.docker.com/r/tiangolo/uwsgi-nginx-flask/) docker container as a starter. It then copies relevant files into the image and installs the python pip requirements from `requirements.txt`.
+

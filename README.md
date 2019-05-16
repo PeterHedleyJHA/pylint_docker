@@ -25,10 +25,10 @@ supported at the moment.
 
 ## Other Useful Docker Commands
 
-`sudo docker exec -it peter bash` load the shell of a docker container named `peter`.
-`sudo docker ps` see all running containers.
-`sudo docker kill peter` :( stop docker container called `peter` from running.
-`sudo docker rm peter` (need to do this too in order to re-run a container called `peter`)
+1. `sudo docker exec -it peter bash` load the shell of a docker container named `peter`.
+2. `sudo docker ps` see all running containers.
+3. `sudo docker kill peter` :( stop docker container called `peter` from running.
+4. `sudo docker rm peter` (need to do this too in order to re-run a container called `peter`)
 
 ## Usage
 
